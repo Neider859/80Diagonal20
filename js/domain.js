@@ -168,10 +168,29 @@
     if (!areas.some(([name]) => name === patch.categoria) && patch.categoria !== originalArea) throw new Error("Elige una de las seis áreas actuales.");
     return patch;
   }
+  function problemContexts(rows) {
+    const grouped = new Map();
+    for (const r of rows) {
+      const key = problemKey(r.problema); if (!key) continue;
+      if (!grouped.has(key)) grouped.set(key, {key, name:cleanName(r.problema), loads:new Map()});
+      const p = grouped.get(key); p.loads.set(r.categoria, (p.loads.get(r.categoria) || 0) + Number(r.nivel));
+    }
+    return [...grouped.values()].map(p => {
+      const max = Math.max(...p.loads.values());
+      return {key:p.key, name:p.name, areas:[...p.loads].filter(([a,n]) => n === max && areas.some(([v]) => v === a)).map(([a]) => a).sort((a,b)=>a.localeCompare(b,'es'))};
+    }).sort((a,b)=>a.name.localeCompare(b.name,'es'));
+  }
+  function filterActions(rows, area = '') {
+    return orderActions(rows.filter(r => !area || (area === '__none' ? !r.categoria : r.categoria === area)));
+  }
+  function validActionArea(area) {
+    if (area && !areas.some(([n])=>n === area)) throw new Error('Elige una de las seis áreas actuales.');
+    return area || null;
+  }
   const sage = level => level <= 2 ? "#B7CCC0" : level === 3 ? "#96B8A5" : "#769B87";
   const api = {
     frictionDescription, historyOrder, scope, situationPoints, filterHistory, validateRecord, sage,
-    importanceLabels, importanceLabel, orderActions,
+    importanceLabels, importanceLabel, orderActions, problemContexts, filterActions, validActionArea,
     levels,
     levelLabel,
     formatLevel,

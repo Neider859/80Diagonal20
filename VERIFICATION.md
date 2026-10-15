@@ -66,3 +66,14 @@ Se revisaron capturas de escritorio y móvil y se verificó conservación del bo
 Se reemplazó la columna lateral por una pantalla propia de Nueva acción, accesible desde la navegación superior en escritorio y las pestañas inferiores en móvil. Acciones mantiene únicamente la lista, el progreso y sus controles. Se conserva el borrador al cambiar de pestaña o ancho; al guardar se regresa a Acciones, y un error deja el formulario abierto con su contenido. Preparar una acción desde las funciones internas abre la nueva pestaña.
 
 Se comprobaron navegación en ambos tamaños, ausencia del formulario en la lista, conservación de borrador, error/reintento y retorno después del guardado con servicios simulados.
+
+## Actualización de Acciones: áreas y vínculos
+
+Verificado el 15 de octubre de 2026:
+
+- 23 pruebas de dominio/estado/servicio/exportación aprobadas, incluidas agregación de todo el historial, normalización, empates, áreas retiradas, filtro y orden, vínculos huérfanos, NULL explícito, error con conservación del borrador e invalidación por cuenta.
+- Recorrido nuevo con Supabase simulado: filtros y progreso, vínculo del iPhone, segunda acción vacía, cancelar, confirmación rechazada de reemplazo, sugerencia desde registros antiguos, empate y cancelación, cambio manual, desvinculación, error de guardado y reintento, retirada de área, error/reintento de sugerencias sin sobrescribir campos, móvil y escritorio sin desbordamiento.
+- Recorridos existentes aprobados: acceso/sesión, edición/historial/gráficos internos, respuestas tardías, navegación exclusiva, teclado y distribución, descarga Excel y servidor estático bajo subcarpeta con dependencias locales reales.
+- No se modificaron iPhone, esquema, políticas, datos personales ni exportador Excel. No se publicaron archivos ni se generó ZIP.
+
+Las comprobaciones de navegador utilizan datos simulados. Queda pendiente la revisión con tu cuenta y dispositivos reales; esta entrega no vuelve a certificar Excel de escritorio/móvil, pues el exportador permanece sin cambios.

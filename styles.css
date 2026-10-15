@@ -110,3 +110,8 @@ dialog{border-color:#303c50;box-shadow:0 24px 100px #0009}
 #new-action>.intro{max-width:680px;margin-left:auto;margin-right:auto}
 #new-action>#actionForm{width:100%;margin:0 auto;position:static}
 @media(min-width:768px){.tabs{max-width:560px}}
+
+/* Optional classification remains secondary to the action text. */
+.action-filter{max-width:22rem;margin-bottom:1rem}.action-area,.action-problem{margin:.3rem 0;overflow-wrap:anywhere}.action-menu{position:relative;align-self:start;font-size:.85rem}.action-menu summary{cursor:pointer;color:var(--muted);padding:.6rem}.action-menu[open]{min-width:8rem}.action-menu button{display:block;width:100%;text-align:left}.action-row>div{min-width:0}#problemStatus:empty{display:none}#actionChoice{max-width:32rem}
+.action-row{grid-template-columns:20px minmax(0,1fr) 82px}.action-menu{width:82px}.action-menu[open]{min-width:0}.action-menu[open] button{position:relative;right:80px;width:162px;background:#101827;z-index:2}.action-row .action-area,.action-row .action-problem{flex-basis:100%;font-size:.78rem;line-height:1.4}.action-filter select,#actionProblem,#actionArea{min-width:0;max-width:100%}
+.action-menu summary{list-style:none;padding:.5rem .2rem;text-align:right;white-space:nowrap}.action-menu summary::-webkit-details-marker{display:none}

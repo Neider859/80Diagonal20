@@ -39,7 +39,7 @@
   function rememberEmail(){try{if($('remember').checked)localStorage.setItem(rememberKey,$('email').value.trim());else localStorage.removeItem(rememberKey);}catch{}}
   function changed(channel){
     if(channel==='account'){
-      closeDetails();closeEditor();cancelExport();historyOpen=false;historyPage=0;busy=false;
+      closeActionChoice();syncActionForm();$('actionFilter').value='';closeDetails();closeEditor();cancelExport();historyOpen=false;historyPage=0;busy=false;
       $('captureForm').reset();captureLevel=null;areaDescription();$('captureError').textContent='';
       $('actionForm').reset();$('actionError').textContent='';$('password').value='';
       $('historyQuery').value='';$('historyLevel').value='';opts($('historyArea'),[['','Todas']],'');
@@ -54,7 +54,7 @@
     if(channel==='period'){closeDetails();closeEditor();cancelExport();}
     if(channel==='analysis'||channel==='period'){renderAnalysis();renderDetail();}
     if(channel==='history'){renderHistory();}
-    if(channel==='names'){$('problemNames').replaceChildren(...store.names.map(n=>{const o=el('option');o.value=n;return o;}));}
+    if(channel==='names'){renderProblemOptions();$('problemNames').replaceChildren(...store.names.map(n=>{const o=el('option');o.value=n;return o;}));}
     if(channel==='actions')renderActions();
   }
   function selectPanel(id){
@@ -201,27 +201,86 @@
   const importanceReferences=['Tiene poco peso para lo que hoy quiero cuidar.','Me importa un poco.','Tiene un lugar significativo para mí.','Es importante para lo que quiero cuidar.','Es de lo más importante para mí en este momento.'];
   $('actionText').addEventListener('input',()=>store.actionDraft=$('actionText').value);
   $('importance').addEventListener('change',()=>{store.importance=$('importance').value;$('importanceDescription').textContent=importanceReferences[Number(store.importance)-1]||'¿Cuánto importa para lo que hoy quieres cuidar?';});
-  function prepareAction(name){
-    if((store.actionDraft.trim()||store.importance)&&!window.confirm('Ya tienes un borrador. ¿Reemplazarlo?'))return;
-    store.actionDraft=('Dar un pequeño paso para aliviar: '+name).slice(0,300);store.importance='';$('actionText').value=store.actionDraft;$('importance').value='';$('importanceDescription').textContent='¿Cuánto importa para lo que hoy quieres cuidar?';selectPanel('new-action');$('actionText').focus();
+  const currentAreas = () => A.areas.map(([n])=>[n,n]);
+  opts($('actionArea'),[['','Sin área'],...currentAreas()],'');
+  opts($('actionFilter'),[['','Todas las áreas'],...currentAreas(),['__none','Sin área']],'');
+  let choiceCallback = null;
+  function closeActionChoice(){ choiceCallback=null; $('actionChoice').close(); }
+  function chooseArea(title, areas, value, callback){
+    if(busy)return;
+    $('actionChoiceTitle').textContent=title;opts($('actionChoiceArea'),[['','Sin área'],...areas.map(n=>[n,n])],value);
+    $('actionChoiceError').textContent='';choiceCallback=callback;$('actionChoice').showModal();
   }
+  $('actionChoiceCancel').onclick=()=>{if(!busy)closeActionChoice();};
+  $('actionChoice').addEventListener('cancel',e=>{if(busy)e.preventDefault();else choiceCallback=null;});
+  $('actionChoiceForm').addEventListener('submit',async e=>{
+    e.preventDefault();if(busy||!choiceCallback)return;
+    const c=store.context(), callback=choiceCallback;
+    $('actionChoiceSave').disabled=true;
+    try{await callback($('actionChoiceArea').value);if(c.active())closeActionChoice();}
+    catch(error){if(c.active())$('actionChoiceError').textContent=error.message;}
+    finally{$('actionChoiceSave').disabled=false;}
+  });
+  function renderProblemOptions(){
+    const selected=store.actionProblem, items=store.problemContexts.map(p=>[p.key,p.name]);
+    if(selected&&!items.some(([k])=>k===selected.key))items.push([selected.key,selected.name]);
+    opts($('actionProblem'),[['','Sin problema vinculado'],...items],selected?.key||'');
+    const state=store.status.names||{}, target=$('problemStatus');target.replaceChildren();
+    $('actionProblem').disabled=!!state.loading||!!state.error;
+    if(state.loading)target.textContent='Cargando problemas…';
+    else if(state.error)target.append(el('span','No se pudieron cargar los problemas. '),button('Reintentar',()=>store.load('names'),'plain'));
+    $('actionCancel').hidden=!selected;
+  }
+  function syncActionForm(){
+    $('actionText').value=store.actionDraft;$('importance').value=store.importance;$('actionArea').value=store.actionArea;
+    $('importanceDescription').textContent=importanceReferences[Number(store.importance)-1]||'';
+    $('actionError').textContent='';renderProblemOptions();
+  }
+  $('actionArea').onchange=()=>{store.actionArea=$('actionArea').value;};
+  $('actionFilter').onchange=()=>{store.actionFilter=$('actionFilter').value;renderActions();};
+  $('actionProblem').onchange=()=>{
+    if(busy)return renderProblemOptions();
+    const p=store.problemContexts.find(p=>p.key===$('actionProblem').value);
+    if(!p){store.actionProblem=null;renderProblemOptions();return;}
+    const commit=area=>{store.actionProblem={name:p.name,key:p.key};store.actionArea=area;syncActionForm();};
+    renderProblemOptions();
+    if(p.areas.length>1)chooseArea('Este problema tiene la misma carga en varias áreas',p.areas,'',commit);
+    else commit(p.areas[0]||'');
+  };
+  function prepareAction(name, area, key=A.problemKey(name)){
+    if(busy)return;
+    const p=store.problemContexts.find(p=>p.key===key);
+    const commit=value=>{if(store.hasActionDraft()&&!window.confirm('Ya tienes un borrador. ¿Reemplazarlo?'))return;store.prepareAction({name,key},value);syncActionForm();selectPanel('new-action');$('actionText').focus();};
+    if(area!==undefined)commit(area||'');
+    else if(p?.areas.length>1)chooseArea('Elige el área de la acción',p.areas,'',commit);
+    else commit(p?.areas[0]||'');
+  }
+  $('actionCancel').onclick=()=>{if(busy)return;store.clearActionDraft();syncActionForm();selectPanel('actions');};
   $('actionForm').addEventListener('submit',async e=>{
     e.preventDefault();if(busy)return;const c=store.context();busy=true;$('actionSave').disabled=true;$('actionError').textContent='';dismissKeyboard();
-    try{if(await store.saveAction()){$('actionText').value=store.actionDraft;$('importance').value=store.importance;$('importanceDescription').textContent='';selectPanel('actions');toast('Acción guardada.');}}
+    try{if(await store.saveAction()){syncActionForm();selectPanel('actions');toast('Acción guardada.');}}
     catch(e){if(c.active())$('actionError').textContent=e.message;}finally{if(c.active()){busy=false;$('actionSave').disabled=false;}}
   });
   async function changeAction(row,patch){if(busy)return;if(patch===null&&!window.confirm('¿Eliminar esta acción permanentemente?'))return;const c=store.context();busy=true;try{await store.changeAction(row.id,patch);}catch(e){if(c.active()){toast(e.message);renderActions();}}finally{if(c.active())busy=false;}}
   function renderActions(){
     const target=$('actionsBody');target.replaceChildren();if(status('actions',target))return;
-    const completed=store.actions.filter(a=>a.completada).length,percent=store.actions.length?completed/store.actions.length*100:0;
+    const filtered=A.filterActions(store.actions,store.actionFilter);
+    const completed=filtered.filter(a=>a.completada).length,percent=filtered.length?completed/filtered.length*100:0;
     const progress=card('Acciones completadas');progress.append(el('p',pct(percent)));const bar=el('progress');bar.value=percent;bar.max=100;bar.setAttribute('aria-label','Acciones completadas');progress.append(bar);if(!desktop.matches)target.append(progress);
-    if(!store.actions.length){target.append(el('p','Todavía no hay acciones. Puedes empezar con una pequeña.','muted'));if(desktop.matches)target.append(progress);return;}
-    if(desktop.matches&&!store.actions.some(a=>!a.completada))target.append(el('p','No tienes acciones pendientes.','muted'));
-    for(const done of [false,true]){const rows=A.orderActions(store.actions).filter(r=>r.completada===done);if(!rows.length)continue;const list=card(done?'Completadas':'Pendientes');rows.forEach(row=>{
+    if(!filtered.length){target.append(el('p','No hay acciones en esta selección.','muted'));if(desktop.matches)target.append(progress);return;}
+    if(desktop.matches&&!filtered.some(a=>!a.completada))target.append(el('p','No tienes acciones pendientes.','muted'));
+    for(const done of [false,true]){const rows=filtered.filter(r=>r.completada===done);if(!rows.length)continue;const list=card(done?'Completadas':'Pendientes');rows.forEach(row=>{
       const item=el('div','','action-row'+(done?' done':'')),check=el('input');check.type='checkbox';check.checked=done;check.setAttribute('aria-label',(done?'Marcar pendiente: ':'Completar: ')+row.texto);check.addEventListener('change',()=>changeAction(row,{completada:check.checked}));
-      const content=el('div');content.append(el('p',row.texto));const importance=el('select');importance.setAttribute('aria-label','Cambiar importancia de '+row.texto);opts(importance,[...(row.importancia==null?[['','Sin valorar']]:[]),...A.importanceLabels.map((_,i)=>[String(i+1),A.importanceLabel(i+1)])],String(row.importancia??''));if(row.importancia==null)importance.firstChild.disabled=true;importance.addEventListener('change',()=>changeAction(row,{importancia:Number(importance.value)}));content.append(importance);
+      const content=el('div');content.append(el('p',row.texto));content.append(el('p',row.categoria||'Sin área','hint action-area'));if(row.problema_nombre)content.append(el('p',row.problema_nombre,'hint action-problem'));const importance=el('select');importance.setAttribute('aria-label','Cambiar importancia de '+row.texto);opts(importance,[...(row.importancia==null?[['','Sin valorar']]:[]),...A.importanceLabels.map((_,i)=>[String(i+1),A.importanceLabel(i+1)])],String(row.importancia??''));if(row.importancia==null)importance.firstChild.disabled=true;importance.addEventListener('change',()=>changeAction(row,{importancia:Number(importance.value)}));content.append(importance);
       const remove=button('Eliminar',()=>changeAction(row,null),'plain action-delete');remove.setAttribute('aria-label','Eliminar acción: '+row.texto);remove.title='Eliminar acción';
-      item.append(check,content,remove);list.append(item);
+      const menu=el('details','','action-menu'),summary=el('summary','Opciones');menu.append(summary);
+      menu.append(button('Cambiar área',()=>chooseArea('Clasificar acción',A.areas.map(([n])=>n),row.categoria||'',async area=>{
+        const c=store.context();busy=true;
+        try{if(await store.changeAction(row.id,{categoria:area||null}))toast('Área guardada: '+(area||'Sin área'));}
+        finally{if(c.active())busy=false;}
+      }),'plain'));
+      if(row.problema_nombre&&row.problema_clave)menu.append(button('Añadir otra acción',()=>prepareAction(row.problema_nombre,row.categoria||'',row.problema_clave),'plain'));
+      menu.append(remove);item.append(check,content,menu);list.append(item);
     });target.append(list);}
     if(desktop.matches)target.append(progress);
   }
@@ -270,7 +329,7 @@
   });
   document.addEventListener('visibilitychange',()=>{
     const hidden=document.hidden;$('privacy').hidden=!hidden;$('app').inert=hidden;$('auth').inert=hidden;
-    if(hidden){closeDetails();closeEditor();cancelExport();}
+    if(hidden){closeActionChoice();closeDetails();closeEditor();cancelExport();}
     else if(store.user){if(panel==='analysis')store.load('analysis');if(panel==='actions')store.load('actions');}
   });
   if(db){

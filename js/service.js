@@ -1,7 +1,7 @@
 (function(root) {
   'use strict';
   const fields = 'id,categoria,evento,emocion,nivel,nivel_original_10,problema,created_at';
-  const actionFields = 'id,texto,completada,importancia,created_at';
+  const actionFields = 'id,texto,completada,importancia,created_at,categoria,problema_nombre,problema_clave';
   class Cancelled extends Error {}
   function check(active) { if (!active()) throw new Cancelled('Solicitud cancelada.'); }
   class Service {

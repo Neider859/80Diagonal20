@@ -66,15 +66,18 @@
       <section id="actions" class="panel" hidden>
         <div class="intro"><h1>Tareas y acciones</h1><p class="muted">Dale espacio a lo que para ti importa.</p></div>
         <div class="section-head"><h2>Tus acciones</h2><div class="row"><button id="actionsExportExcel" class="plain subtle-export" title="Informe de fricciones · Semana">Descargar Excel</button><button id="refreshActions" class="plain">Actualizar</button></div></div>
+        <label class="action-filter">Filtrar por área<select id="actionFilter"></select></label>
         <div id="actionsBody" class="stack"></div>
       </section>
       <section id="new-action" class="panel" hidden>
         <div class="intro"><h1>Nueva acción</h1><p class="muted">Un paso pequeño para lo que te importa.</p></div>
         <form id="actionForm" class="card stack narrow">
+          <label>Problema · opcional<select id="actionProblem"></select></label><div id="problemStatus" class="hint" role="status"></div>
+          <label>Área · opcional<select id="actionArea"></select></label>
           <label>¿Qué quieres hacer o cuidar?<textarea id="actionText" rows="3" maxlength="600" required></textarea></label>
           <label>Importancia personal<select id="importance" required><option value="">Elige una valoración</option></select></label>
           <p id="importanceDescription" class="hint"></p><p class="hint">La importancia no es urgencia ni intensidad de fricción.</p>
-          <p id="actionError" role="alert" class="error"></p><button id="actionSave" class="primary">Guardar acción</button>
+          <p id="actionError" role="alert" class="error"></p><button id="actionSave" class="primary">Guardar acción</button><button id="actionCancel" type="button" class="plain" hidden>Cancelar</button>
         </form>
       </section>
     </main>
@@ -85,6 +88,7 @@
   <dialog id="editDialog" aria-labelledby="editTitle"><div class="dialog-head"><h2 id="editTitle">Editar registro</h2></div>
     <form id="editForm" class="stack"><label>Situación<textarea id="editEvent" rows="4" maxlength="1000" required></textarea></label><label>Emoción · opcional<input id="editEmotion" maxlength="160"></label><label>Área<select id="editArea"></select></label><label>Problema · opcional<input id="editProblem" list="problemNames" maxlength="240"></label><div id="editLevels"></div><p id="editError" role="alert" class="error"></p><div class="row"><button id="editCancel" type="button">Cancelar</button><button class="primary" id="editSave">Guardar cambios</button></div></form>
   </dialog>
+  <dialog id="actionChoice" aria-labelledby="actionChoiceTitle"><form id="actionChoiceForm" class="stack"><h2 id="actionChoiceTitle"></h2><label>Área<select id="actionChoiceArea"></select></label><p id="actionChoiceError" role="alert" class="error"></p><div class="row"><button type="button" id="actionChoiceCancel">Cancelar</button><button id="actionChoiceSave" class="primary">Confirmar</button></div></form></dialog>
   <div id="toast" role="status" hidden></div>
   <div id="privacy" hidden><span>Tu espacio personal</span></div>
   <noscript>Activa JavaScript para utilizar Pareto Core.</noscript>

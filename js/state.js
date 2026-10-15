@@ -7,6 +7,7 @@
       this.service = service; this.notify = notify; this.epoch = 0; this.tickets = {};
       this.user = null; this.period = 'week'; this.weekOffset = 0;
       this.analysis = []; this.history = []; this.actions = []; this.names = [];
+      this.problemContexts = []; this.actionArea = ''; this.actionProblem = null; this.actionFilter = '';
       this.status = {}; this.historyLoaded = false; this.actionDraft = ''; this.importance = '';
     }
     bounds() { return A.periodBounds(this.period, this.weekOffset); }
@@ -19,6 +20,7 @@
       if(this.user?.id === user?.id) return;
       this.epoch++; this.tickets = {}; this.user = user;
       this.analysis = []; this.history = []; this.actions = []; this.names = [];
+      this.problemContexts = []; this.actionArea = ''; this.actionProblem = null; this.actionFilter = '';
       this.status = {}; this.historyLoaded = false; this.actionDraft = ''; this.importance = '';
       this.period = 'week'; this.weekOffset = 0; this.notify('account');
     }
@@ -34,8 +36,8 @@
         });
         if(!c.active()) return;
         if(channel === 'names') {
-          const seen = new Map(); rows.forEach(r => { const key = A.problemKey(r.problema); if(key && !seen.has(key)) seen.set(key, A.cleanName(r.problema)); });
-          this.names = [...seen.values()].sort((a,b) => a.localeCompare(b,'es'));
+          this.problemContexts = A.problemContexts(rows);
+          this.names = this.problemContexts.map(p=>p.name);
         } else this[channel] = rows;
         if(channel === 'history') this.historyLoaded = true;
         this.status[channel] = {loading:false,error:null};
@@ -66,16 +68,20 @@
       if(!c.active()) return false;
       await this.refreshRecords(); return c.active();
     }
+    clearActionDraft() { this.actionDraft = ''; this.importance = ''; this.actionArea = ''; this.actionProblem = null; }
+    hasActionDraft() { return !!(this.actionDraft.trim() || this.importance || this.actionArea); }
+    prepareAction(problem, area = '') { this.clearActionDraft(); this.actionProblem = problem; this.actionArea = A.validActionArea(area) || ''; }
     async saveAction() {
       const texto = this.actionDraft.trim(), importancia = Number(this.importance);
       if(!texto || [...texto].length > 300) throw new Error('Escribe una acción de 1 a 300 caracteres.');
       if(!Number.isInteger(importancia) || importancia < 1 || importancia > 5) throw new Error('Elige la importancia personal.');
       const c = this.context(); if(!c.user) return false;
-      await this.service.create(c.user,'palancas',{texto,importancia,completada:false},c.active);
+      await this.service.create(c.user,'palancas',{texto,importancia,completada:false,categoria:A.validActionArea(this.actionArea),problema_nombre:this.actionProblem?.name || null,problema_clave:this.actionProblem?.key || null},c.active);
       if(!c.active()) return false;
-      this.actionDraft = ''; this.importance = ''; await this.load('actions'); return c.active();
+      this.clearActionDraft(); await this.load('actions'); return c.active();
     }
     async changeAction(id,patch) {
+      if(patch && Object.hasOwn(patch,'categoria')) patch = {...patch,categoria:A.validActionArea(patch.categoria)};
       const c = this.context(); if(!c.user) return false;
       await this.service.change(c.user,'palancas',id,patch,c.active);
       if(c.active()) await this.load('actions'); return c.active();

@@ -114,3 +114,23 @@ test('Excel vacío sin barras ficticias, un registro, repetidos y lista de 521',
   assert.ok(files['xl/tables/table2.xml'].includes('A3:D524'));assert.ok(files['xl/drawings/charts/chart2.xml'].includes('ptCount val="521"'));assert.equal((files['xl/worksheets/sheet2.xml'].match(/Texto repetido/g)||[]).length,521);
   assert.ok(X.rowHeight(['corto'],[55])<=28);assert.ok(X.rowHeight(['largo '.repeat(90)],[55])>100);assert.ok(X.rowHeight(['a\nb\nc\nd'],[55])>60);
 });
+test('contextos de acciones usan todo el historial, normalizan y resuelven áreas/empates',()=>{
+  const [a,b]=A.areas.map(([n])=>n);
+  const rows=[row('a',3,' Ruído ',a),{...row('b',5,'ruido',b),created_at:'2020-01-01'},row('c',2,'RUIDO',a),row('d',5,'Legado','Alma'),row('e',2,null,a)];
+  const c=A.problemContexts(rows);assert.equal(c.length,2);assert.deepEqual(c.find(p=>p.key==='ruido').areas,[b,a].sort((x,y)=>x.localeCompare(y,'es')));assert.deepEqual(c.find(p=>p.key==='legado').areas,[]);
+  assert.deepEqual(A.problemContexts([...rows,row('f',1,'ruido',b)]).find(p=>p.key==='ruido').areas,[b]);
+});
+test('áreas filtran completadas, progreso y orden sin inferir vínculos',()=>{
+  const a=A.areas[0][0], rows=[{id:'a',importancia:2,completada:false,categoria:a},{id:'b',importancia:5,completada:false,categoria:a},{id:'c',completada:true,categoria:null}];
+  assert.deepEqual(A.filterActions(rows,a).map(r=>r.id),['b','a']);assert.deepEqual(A.filterActions(rows,'__none').map(r=>r.id),['c']);assert.equal(A.filterActions(rows).length,3);assert.equal(A.validActionArea(''),null);assert.throws(()=>A.validActionArea('Alma'));
+});
+test('borrador vinculado vacío, segunda acción huérfana, error y campos explícitos',async()=>{
+  let saved,fail=true;const s=new Store({create:async(u,t,v)=>{if(fail)throw Error('fallo');saved=v;},read:async()=>[]});s.account({id:'u'});
+  s.prepareAction({name:'Ya eliminado',key:'ya eliminado'},A.areas[0][0]);assert.equal(s.actionDraft,'');assert.equal(s.importance,'');assert.ok(s.hasActionDraft());s.actionDraft='Mi paso';s.importance='4';
+  await assert.rejects(s.saveAction());assert.equal(s.actionProblem.key,'ya eliminado');assert.equal(s.actionDraft,'Mi paso');fail=false;await s.saveAction();assert.equal(saved.problema_nombre,'Ya eliminado');assert.equal(saved.categoria,A.areas[0][0]);assert.equal(s.actionProblem,null);
+  s.actionDraft='Independiente';s.importance='1';await s.saveAction();assert.equal(saved.categoria,null);assert.equal(saved.problema_clave,null);
+  s.actionFilter='__none';s.prepareAction({name:'X',key:'x'});s.account({id:'v'});assert.equal(s.actionFilter,'');assert.equal(s.actionProblem,null);assert.deepEqual(s.problemContexts,[]);
+});
+test('sugerencias tardías no pasan a otra cuenta ni sustituyen el borrador',async()=>{
+ const d=deferred(),s=new Store({read:()=>d.promise});s.account({id:'u'});s.prepareAction({name:'Propio',key:'propio'},A.areas[1][0]);s.actionDraft='Texto';const pending=s.load('names');s.account({id:'v'});s.actionDraft='Otra cuenta';d.resolve([row()]);await pending;assert.deepEqual(s.problemContexts,[]);assert.equal(s.actionDraft,'Otra cuenta');
+});

@@ -68,3 +68,13 @@ Puedes indicar su ubicación mediante `PLAYWRIGHT_MODULE`. Para la comprobación
 `js/domain.js` contiene vocabulario y cálculos; `service.js`, operaciones filtradas por propietario; `state.js`, estado e invalidación de solicitudes; `charts.js`, gráficos accesibles; `excel.js`, exportación; `app.js`, interacción. La plantilla Excel se conserva en `assets/excel-template.json`. Supabase JS está fijado a **2.117.3**, con su licencia en `vendor`.
 
 La entrega no modifica la web anterior ni la aplicación iPhone, no necesita migraciones y no incluye IA, publicación automática ni ZIP.
+
+## Acciones por área y problema
+
+Nueva acción permite elegir un problema opcional y un área. La propuesta de área utiliza la carga de **todo el historial** del problema, agrupado con la normalización habitual. En empate se elige entre las áreas empatadas o Sin área; cancelar conserva el borrador. Puedes cambiar el área y desvincular el problema sin perderla.
+
+En Acciones, el filtro afecta pendientes, completadas y progreso. Opciones permite cambiar/quitar el área y, para acciones vinculadas, añadir otra acción vacía con el mismo problema y área. Las acciones antiguas permanecen Sin área. Los vínculos procedentes de iPhone se conservan, incluso si el problema ya no tiene registros. Los borradores con texto, importancia o área requieren confirmación para reemplazarse.
+
+Se utilizan las columnas existentes `palancas.categoria`, `problema_nombre` y `problema_clave`. No se requieren migraciones. Quitar área guarda NULL. Las sugerencias se preparan en memoria desde la carga existente de nombres, con reintento independiente; refrescarlas no modifica el borrador. Cerrar sesión limpia borrador, filtro y contexto. Vincular acciones no modifica las preferencias locales del iPhone. La exportación sigue siendo el Excel de fricciones; no incluye las acciones ni CSV.
+
+Prueba adicional: `node tests/actions-areas.cjs` (requiere Playwright). `TEST_WEBKIT=1` ejecuta el mismo recorrido con WebKit.

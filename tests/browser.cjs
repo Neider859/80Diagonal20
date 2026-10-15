@@ -62,8 +62,8 @@ async function main(){
     const xlsxDownload=page.waitForEvent('download');await page.locator('#exportExcel').click();const xlsx=await xlsxDownload;await xlsx.saveAs(path.join(out,'pareto-web.xlsx'));
     assert.equal(await page.locator('#exportCsv').count(),0);
     // Problem action draft protection and actions persistence.
-    await page.getByRole('button',{name:'Ver detalles',exact:true}).first().click();await page.getByRole('button',{name:'Preparar una acción'}).click();await page.locator('#actionText').waitFor({state:'visible'});assert.match(await page.locator('#actionText').inputValue(),/Dar un pequeño paso/);
-    await page.locator('#importance').selectOption('5');await page.getByRole('button',{name:'Guardar acción',exact:true}).click();await page.waitForFunction(()=>window.mock.palancas.length===1);await page.locator('#actionsBody .action-row').waitFor();
+    await page.getByRole('button',{name:'Ver detalles',exact:true}).first().click();await page.getByRole('button',{name:'Preparar una acción'}).click();await page.locator('#actionText').waitFor({state:'visible'});assert.equal(await page.locator('#actionText').inputValue(),'');assert.notEqual(await page.locator('#actionProblem').inputValue(),'');
+    await page.locator('#actionText').fill('Mi acción manual');await page.locator('#importance').selectOption('5');await page.getByRole('button',{name:'Guardar acción',exact:true}).click();await page.waitForFunction(()=>window.mock.palancas.length===1);await page.locator('#actionsBody .action-row').waitFor();
     await page.locator('#actionsBody input[type=checkbox]').check();await page.waitForFunction(()=>window.mock.palancas[0].completada===true);
     await openAnalysis(page);await ready(page);
     // No classified problems => no empty problem cards, but stats and areas remain.
