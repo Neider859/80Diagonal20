@@ -62,10 +62,11 @@
       if(!c.active()) return false;
       await this.refreshRecords(); return c.active();
     }
-    async deleteRecord(id) {
+    async deleteRecord(id, afterCommit = async () => {}) {
       const c = this.context(); if(!c.user) return false;
       await this.service.change(c.user,'fricciones',id,null,c.active);
       if(!c.active()) return false;
+      await afterCommit(); if(!c.active()) return false;
       await this.refreshRecords(); return c.active();
     }
     clearActionDraft() { this.actionDraft = ''; this.importance = ''; this.actionArea = ''; this.actionProblem = null; }
@@ -80,10 +81,12 @@
       if(!c.active()) return false;
       this.clearActionDraft(); await this.load('actions'); return c.active();
     }
-    async changeAction(id,patch) {
+    async changeAction(id,patch, afterCommit = async () => {}) {
       if(patch && Object.hasOwn(patch,'categoria')) patch = {...patch,categoria:A.validActionArea(patch.categoria)};
       const c = this.context(); if(!c.user) return false;
       await this.service.change(c.user,'palancas',id,patch,c.active);
+      if(!c.active()) return false;
+      await afterCommit();
       if(c.active()) await this.load('actions'); return c.active();
     }
   }

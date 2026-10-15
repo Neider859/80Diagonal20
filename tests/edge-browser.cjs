@@ -30,9 +30,9 @@ const {setup,login,ready,openAnalysis}=require('./browser.cjs');
     assert.equal(await page.evaluate(()=>window.mock.fricciones.filter(r=>r.categoria==='Trabajo'&&r.problema==='Clasificado').length),1);
     // Delete requires confirmation; cancelling must preserve the record.
     const beforeDelete=await page.evaluate(()=>window.mock.fricciones.length);
-    page.once('dialog',d=>d.dismiss());await page.locator('#historyBody .record').first().getByRole('button',{name:'Eliminar',exact:true}).click();
+    await page.locator('#historyBody .record').first().getByRole('button',{name:'Eliminar',exact:true}).click();await page.locator('#deleteCancel').click();
     assert.equal(await page.evaluate(()=>window.mock.fricciones.length),beforeDelete);
-    page.once('dialog',d=>d.accept());await page.locator('#historyBody .record').first().getByRole('button',{name:'Eliminar',exact:true}).click();
+    await page.locator('#historyBody .record').first().getByRole('button',{name:'Eliminar',exact:true}).click();await page.locator('#deleteConfirm').click();
     await page.waitForFunction(n=>window.mock.fricciones.length===n-1,beforeDelete);await ready(page);
     // A record removed elsewhere cannot be silently overwritten; keep its draft for recovery.
     await page.locator('#historyBody .record').first().getByRole('button',{name:'Editar registro'}).click();

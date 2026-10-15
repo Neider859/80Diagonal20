@@ -77,3 +77,13 @@ Verificado el 15 de octubre de 2026:
 - No se modificaron iPhone, esquema, políticas, datos personales ni exportador Excel. No se publicaron archivos ni se generó ZIP.
 
 Las comprobaciones de navegador utilizan datos simulados. Queda pendiente la revisión con tu cuenta y dispositivos reales; esta entrega no vuelve a certificar Excel de escritorio/móvil, pues el exportador permanece sin cambios.
+
+## Transiciones al agregar y borrar
+
+Las acciones nuevas tienen una entrada breve; el Escáner confirma el guardado con un realce tenue. Los registros y acciones eliminados se desvanecen durante 180 ms únicamente después de que el servicio confirme el borrado y antes del refresco. Un fallo conserva la fila. Los avisos aparecen suavemente. Se respeta `prefers-reduced-motion`, sin animaciones de entrada, salida o confirmación para esa preferencia.
+
+Verificación: 23 pruebas de dominio/estado aprobadas y recorrido general Chromium de captura, edición, historial, acciones y Excel aprobado. El recorrido específico `tests/motion.cjs` comprueba alta, error sin salida, borrado confirmado y movimiento reducido con Supabase simulado. Revisión subjetiva de las transiciones en dispositivos reales pendiente. Sin cambios en iPhone, datos ni Supabase.
+
+## Confirmación de eliminación integrada
+
+Se sustituyó el aviso nativo del navegador al borrar acciones y situaciones por un diálogo compacto del diseño oscuro/esmeralda. Incluye Cancelar y Eliminar; el foco inicial queda en Cancelar y Escape cierra sin borrar. Se cancela al cambiar de cuenta o pasar a segundo plano y se valida la cuenta antes de continuar. La salida animada sigue ocurriendo solo después de confirmar el borrado en el servicio. Pruebas simuladas de confirmación, Escape, errores y movimiento reducido aprobadas.
